@@ -13,7 +13,9 @@ For each photo:
    - "dtl" — Down-The-Line / DTL (single targets, commonly out of 25)
    - "doubles" — any doubles event (ATA Trap Doubles, Universal Trench doubles, etc — commonly out of 50)
    Infer from labels, headings, and column layout.
-2. Read every shooter row: name (often handwritten, sometimes cursive), class if shown (AA/A/B/C/D), and the final total score for that round (the TOTAL column, or a circled/boxed number).
+2. Read every shooter row: name (often handwritten, sometimes cursive), class if shown (AA/A/B/C/D), and that shooter's score for THIS discipline (the round score out of 25 for ATA/DTL, or out of 50 for Doubles).
+
+Extract ATA, DTL and Doubles scores per shooter. IGNORE the Totaal column completely — do not extract it. The app will calculate the total itself.
 
 Then MERGE all photos into ONE list of shooters:
 - Match the same shooter across photos by name, allowing for minor handwriting/spelling variation (treat as the same person).
@@ -23,6 +25,7 @@ SCORING NOTES:
 - The scoring system often uses a running countdown: numbers in cells show hits remaining, and a diagonal slash (/) marks a hit.
 - Pre-printed diagonal lines on the card template are not marks — ignore them.
 - Only include shooters who have a name written. Skip blank rows.
+- Never read or report a "Totaal"/"Total" column value — only the per-discipline ATA/DTL/Doubles scores matter; totals are computed by the app as ATA + DTL + Doubles (treating any missing discipline as 0).
 
 Also extract:
 - "competition": the name/title of the competition or event written on the card(s). If not visible, use null.
