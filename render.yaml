@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: maccauw-scorer
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PORT
+        value: 3000

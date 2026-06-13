@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0D0D1A">
+<title>Maccauw Clay Target Club — Scorer</title>
+<style>
+  :root {
+    --bg: #0D0D1A;
+    --surface: #1A1A2E;
+    --surface2: #16213E;
+    --gold: #D4AF37;
+    --gold-dim: #9A7E24;
+    --white: #F0EEE8;
+    --muted: #8A8A9A;
+    --green: #2ECC71;
+    --red: #E74C3C;
+    --orange: #E67E22;
+    --border: rgba(212,175,55,0.2);
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--white); font-family: var(--font); min-height: 100vh; }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--gold);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    width: 44px;
+    height: 44px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .header-title { flex: 1; }
+  .header-title h1 { font-size: 16px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
+  .header-title p { font-size: 11px; color: var(--muted); }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .nav-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .nav-btn:hover:not(.active) { color: var(--white); }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 16px; max-width: 700px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom: 12px; }
+  label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--white);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--gold); }
+  select option { background: var(--surface2); }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 11px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--gold); color: var(--bg); }
+  .btn-primary:hover { background: #C9A227; }
+  .btn-secondary { background: var(--surface2); color: var(--white); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: #C0392B; }
+  .btn-green { background: var(--green); color: var(--bg); }
+  .btn-sm { padding: 7px 12px; font-size: 11px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-block { width: 100%; }
+
+  /* ── Competition list (Leaderboard) ── */
+  .comp-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .comp-item:hover { border-color: var(--gold); }
+  .comp-item.selected { border-color: var(--gold); background: rgba(212,175,55,0.08); }
+  .comp-badge {
+    background: var(--gold);
+    color: var(--bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .comp-info { flex: 1; min-width: 0; }
+  .comp-info strong { font-size: 14px; display: block; }
+  .comp-info small { color: var(--muted); font-size: 11px; display: block; }
+
+  /* ── Leaderboard table ── */
+  .lb-table { width: 100%; border-collapse: collapse; }
+  .lb-table th {
+    background: var(--surface2);
+    color: var(--gold);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .lb-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 14px;
+  }
+  .lb-table tr:hover td { background: rgba(212,175,55,0.05); }
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .rank-1 { background: var(--gold); color: var(--bg); }
+  .rank-2 { background: #808080; color: white; }
+  .rank-3 { background: #CD7F32; color: white; }
+  .rank-other { background: var(--surface2); color: var(--muted); }
+  .score-big { font-size: 18px; font-weight: 700; color: var(--gold); }
+
+  /* ── Shooter entry rows (manual + scan results) ── */
+  .shooter-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid transparent;
+  }
+  .shooter-entry.low-confidence { border-left-color: var(--orange); }
+  .shooter-entry .name-input { flex: 1; min-width: 0; }
+  .shooter-entry .class-select { flex: 0 0 64px; }
+  .shooter-entry .score-input {
+    flex: 0 0 64px;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    color: var(--gold) !important;
+  }
+  .shooter-entry .confidence-flag { flex: 0 0 18px; text-align: center; color: var(--orange); font-size: 13px; }
+  .shooter-entry .row-num { flex: 0 0 20px; color: var(--muted); font-size: 12px; text-align: center; }
+
+  /* ── Camera / Upload ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 36px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--gold); background: rgba(212,175,55,0.05); }
+  .drop-zone.disabled { opacity: 0.5; cursor: not-allowed; }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .drop-zone.disabled input[type=file] { pointer-events: none; }
+  .drop-zone-icon { font-size: 40px; margin-bottom: 8px; }
+  .drop-zone p { color: var(--muted); font-size: 13px; }
+  .drop-zone p strong { color: var(--white); }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .photo-slot {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+  }
+  .photo-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-slot .photo-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .photo-count { font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; letter-spacing: 0.5px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    color: var(--white);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.3s;
+    z-index: 1000;
+    white-space: nowrap;
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* ── Loading ── */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(13,13,26,0.25);
+    border-top-color: var(--bg);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 8px; }
+
+  /* ── Row actions ── */
+  .row-actions { display: flex; gap: 6px; }
+
+  @media (max-width: 380px) {
+    .shooter-entry .class-select { flex: 0 0 56px; }
+    .shooter-entry .score-input { flex: 0 0 56px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🎯</div>
+  <div class="header-title">
+    <h1>Maccauw Scorer</h1>
+    <p>Kleiteikenklub · Clay Target Club</p>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('scan')">📷 Scan</button>
+  <button class="nav-btn" onclick="showPage('leaderboard')">🏆 Leaderboard</button>
+  <button class="nav-btn" onclick="showPage('manual')">✏️ Manual</button>
+</nav>
+
+<!-- ══ SCAN (HOME) ════════════════════════════════════════════════════════ -->
+<div id="page-scan" class="page active">
+
+  <!-- Upload step -->
+  <div id="scan-upload">
+    <div class="card">
+      <div class="card-title">📷 Scan Scorecard</div>
+      <div class="card-subtitle">Take or upload up to 4 photos. Claude reads the competition name, date, discipline and every shooter's score automatically.</div>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="photo-input" accept="image/*" multiple capture="environment" onchange="handlePhotoSelect(event)">
+        <div class="drop-zone-icon">📸</div>
+        <p><strong>Tap to take photo or upload</strong></p>
+        <p>Up to 4 photos of the same scorecard</p>
+      </div>
+
+      <div class="photo-grid" id="photo-grid"></div>
+      <div class="photo-count" id="photo-count">0 / 4 photos</div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-primary btn-block" onclick="runScan()" id="scan-btn" disabled>🔍 Scan Scorecard</button>
+        <button class="btn btn-secondary" onclick="clearPhotos()">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results / review step -->
+  <div id="scan-results" style="display:none">
+    <div class="card">
+      <div class="card-title">✅ Extracted Details</div>
+      <div class="card-subtitle">Verify and correct anything Claude got wrong before saving.</div>
+      <div class="form-group">
+        <label>Competition Name</label>
+        <input type="text" id="scan-comp-name" placeholder="e.g. Club Monthly — June 2026">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="scan-comp-date">
+        </div>
+        <div class="form-group">
+          <label>Discipline</label>
+          <input type="text" id="scan-comp-discipline" list="discipline-options" placeholder="e.g. ATA Trap">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Targets per Round (Out of)</label>
+        <input type="number" id="scan-comp-maxscore" min="1" max="200" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 Shooters</div>
+      <div id="scan-shooter-list"></div>
+      <button class="btn btn-secondary btn-block" onclick="addScanShooterRow()" style="margin-top:6px">+ Add Shooter</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:24px">
+      <button class="btn btn-secondary" onclick="discardScan()">↺ Rescan</button>
+      <button class="btn btn-green btn-block" onclick="confirmScan()" id="confirm-scan-btn">💾 Confirm &amp; Save to Leaderboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEADERBOARD ════════════════════════════════════════════════════════ -->
+<div id="page-leaderboard" class="page">
+  <div class="card">
+    <div class="card-title">🏆 Competitions</div>
+    <div id="lb-comp-list">
+      <div class="empty"><div class="empty-icon">🏆</div><p>No competitions yet.<br>Scan a scorecard or add one manually to get started.</p></div>
+    </div>
+  </div>
+
+  <div id="lb-results-section" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="card-title" style="margin:0" id="lb-comp-title">Results</div>
+      <div class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="exportExcel()">⬇️ Excel</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th style="width:50px">#</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th style="text-align:right">Score</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="lb-results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MANUAL ENTRY ═══════════════════════════════════════════════════════ -->
+<div id="page-manual" class="page">
+  <div class="card">
+    <div class="card-title">🏆 Competition</div>
+    <div class="form-group">
+      <label>Select Competition</label>
+      <select id="manual-comp-select" onchange="onManualCompChange()">
+        <option value="">— Select competition —</option>
+        <option value="__new__">+ New Competition</option>
+      </select>
+    </div>
+
+    <div id="manual-new-comp" style="display:none">
+      <div class="form-group">
+        <label>Competition Name</label>
+        <input type="text" id="manual-comp-name" placeholder="e.g. Club Monthly — June 2026">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="manual-comp-date">
+        </div>
+        <div class="form-group">
+          <label>Discipline</label>
+          <input type="text" id="manual-comp-discipline" list="discipline-options" placeholder="e.g. ATA Trap">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Targets per Round (Out of)</label>
+        <input type="number" id="manual-comp-maxscore" min="1" max="200" value="25" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="createManualCompetition()">Create Competition</button>
+    </div>
+  </div>
+
+  <div id="manual-form" style="display:none">
+    <div class="card">
+      <div class="card-title">✏️ Score Entry</div>
+      <div id="manual-shooter-list"></div>
+      <button class="btn btn-secondary btn-block" onclick="addManualShooterRow()" style="margin-top:6px">+ Add Shooter</button>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveManualScores()" style="margin-bottom:24px">💾 Save Scores</button>
+  </div>
+
+  <div id="manual-placeholder" class="empty">
+    <div class="empty-icon">✏️</div>
+    <p>Select or create a competition above to enter scores manually.</p>
+  </div>
+</div>
+
+<datalist id="discipline-options">
+  <option value="ATA Trap">
+  <option value="ATA Trap Doubles">
+  <option value="NSSA Skeet">
+  <option value="NSSA Skeet Doubles">
+  <option value="Universal Trench">
+  <option value="DTL">
+</datalist>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let photos = [];
+let scanData = null;
+let selectedCompId = null;
+let manualCompId = null;
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  const pages = ['scan', 'leaderboard', 'manual'];
+  const idx = pages.indexOf(name);
+  if (idx >= 0) btns[idx].classList.add('active');
+  if (name === 'leaderboard') refreshLeaderboard();
+  if (name === 'manual') refreshManualCompSelect();
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({ error: r.statusText }));
+    throw new Error(e.error || r.statusText);
+  }
+  return r.json();
+}
+
+// ── Scan: photo capture ──────────────────────────────────────────────────
+function handlePhotoSelect(e) {
+  const files = Array.from(e.target.files);
+  for (const f of files) {
+    if (photos.length >= 4) {
+      toast('Maximum 4 photos', 'error');
+      break;
+    }
+    photos.push(f);
+  }
+  renderPhotoGrid();
+  e.target.value = '';
+}
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = photos.map((f, i) => `
+    <div class="photo-slot">
+      <img src="${URL.createObjectURL(f)}" alt="scorecard photo ${i + 1}">
+      <button class="photo-remove" onclick="removePhoto(${i})">✕</button>
+    </div>
+  `).join('');
+  document.getElementById('photo-count').textContent = `${photos.length} / 4 photos`;
+  document.getElementById('scan-btn').disabled = photos.length === 0;
+  const dz = document.getElementById('drop-zone');
+  dz.classList.toggle('disabled', photos.length >= 4);
+}
+
+function removePhoto(idx) {
+  photos.splice(idx, 1);
+  renderPhotoGrid();
+}
+
+function clearPhotos() {
+  photos = [];
+  renderPhotoGrid();
+}
+
+// ── Scan: run OCR ─────────────────────────────────────────────────────────
+async function runScan() {
+  if (!photos.length) return toast('Add at least one photo', 'error');
+
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scanning...';
+
+  try {
+    const formData = new FormData();
+    photos.forEach(p => formData.append('photos', p));
+
+    const r = await fetch('/api/scan', { method: 'POST', body: formData });
+    if (!r.ok) throw new Error((await r.json()).error);
+    const { data } = await r.json();
+
+    scanData = {
+      competition: data.competition || '',
+      date: data.date || new Date().toISOString().split('T')[0],
+      discipline: data.discipline || '',
+      maxScore: data.maxScore || 25,
+      shooters: (data.shooters || []).map(s => ({
+        name: s.name || '',
+        class: s.class || '',
+        total: s.total ?? '',
+        confidence: s.confidence || 'high'
+      }))
+    };
+
+    renderScanResults();
+    document.getElementById('scan-upload').style.display = 'none';
+    document.getElementById('scan-results').style.display = 'block';
+    toast(`Found ${scanData.shooters.length} shooter(s)`);
+  } catch (e) {
+    toast('Scan failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = photos.length === 0;
+    btn.innerHTML = '🔍 Scan Scorecard';
+  }
+}
+
+// ── Scan: results review ─────────────────────────────────────────────────
+function renderScanResults() {
+  document.getElementById('scan-comp-name').value = scanData.competition;
+  document.getElementById('scan-comp-date').value = scanData.date;
+  document.getElementById('scan-comp-discipline').value = scanData.discipline;
+  document.getElementById('scan-comp-maxscore').value = scanData.maxScore;
+  renderScanShooterList();
+}
+
+function renderScanShooterList() {
+  const container = document.getElementById('scan-shooter-list');
+  container.innerHTML = scanData.shooters.map((s, i) => `
+    <div class="shooter-entry ${s.confidence === 'low' ? 'low-confidence' : ''}">
+      <span class="row-num">${i + 1}</span>
+      <input class="name-input" type="text" value="${escapeAttr(s.name)}" placeholder="Name" oninput="updateScanShooter(${i}, 'name', this.value)">
+      <select class="class-select" onchange="updateScanShooter(${i}, 'class', this.value)">
+        <option value="">—</option>
+        <option ${s.class === 'AA' ? 'selected' : ''}>AA</option>
+        <option ${s.class === 'A' ? 'selected' : ''}>A</option>
+        <option ${s.class === 'B' ? 'selected' : ''}>B</option>
+        <option ${s.class === 'C' ? 'selected' : ''}>C</option>
+        <option ${s.class === 'D' ? 'selected' : ''}>D</option>
+      </select>
+      <input class="score-input" type="number" value="${escapeAttr(s.total)}" min="0" max="200" inputmode="numeric" oninput="updateScanShooter(${i}, 'total', this.value)">
+      ${s.confidence === 'low' ? '<span class="confidence-flag" title="Low confidence — please check">⚠️</span>' : '<button class="btn btn-danger btn-sm" onclick="removeScanShooterRow(' + i + ')">✕</button>'}
+    </div>
+  `).join('');
+}
+
+function escapeAttr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function updateScanShooter(idx, field, value) {
+  scanData.shooters[idx][field] = field === 'total' ? value : value;
+}
+
+function addScanShooterRow() {
+  scanData.shooters.push({ name: '', class: '', total: '', confidence: 'high' });
+  renderScanShooterList();
+}
+
+function removeScanShooterRow(idx) {
+  scanData.shooters.splice(idx, 1);
+  renderScanShooterList();
+}
+
+function discardScan() {
+  scanData = null;
+  clearPhotos();
+  document.getElementById('scan-results').style.display = 'none';
+  document.getElementById('scan-upload').style.display = 'block';
+}
+
+async function confirmScan() {
+  const competition = {
+    name: document.getElementById('scan-comp-name').value.trim(),
+    date: document.getElementById('scan-comp-date').value,
+    discipline: document.getElementById('scan-comp-discipline').value.trim(),
+    maxScore: parseInt(document.getElementById('scan-comp-maxscore').value) || 25
+  };
+
+  if (!competition.name) return toast('Enter a competition name', 'error');
+  if (!competition.date) return toast('Enter a date', 'error');
+  if (!competition.discipline) return toast('Enter a discipline', 'error');
+
+  const shooters = scanData.shooters
+    .filter(s => s.name.trim() && s.total !== '' && s.total !== null)
+    .map(s => ({ name: s.name.trim(), class: s.class, total: Number(s.total) }));
+
+  if (!shooters.length) return toast('Add at least one shooter with a score', 'error');
+
+  const btn = document.getElementById('confirm-scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+  try {
+    const res = await api('/api/scan/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ competition, shooters })
+    });
+    toast(`${res.saved} score(s) saved ✓`);
+    selectedCompId = res.competition.id;
+    discardScan();
+    showPage('leaderboard');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 Confirm &amp; Save to Leaderboard';
+  }
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────
+async function refreshLeaderboard() {
+  const comps = await api('/api/competitions');
+  const el = document.getElementById('lb-comp-list');
+
+  if (!comps.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><p>No competitions yet.<br>Scan a scorecard or add one manually to get started.</p></div>';
+    document.getElementById('lb-results-section').style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = comps.map(c => `
+    <div class="comp-item ${selectedCompId === c.id ? 'selected' : ''}" onclick="selectLeaderboardComp(${c.id})">
+      <span class="comp-badge">${escapeAttr(c.discipline)}</span>
+      <div class="comp-info">
+        <strong>${escapeAttr(c.name)}</strong>
+        <small>${new Date(c.date).toLocaleDateString('af-ZA')}</small>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteCompetition(${c.id}, event)">🗑</button>
+    </div>
+  `).join('');
+
+  if (selectedCompId && comps.some(c => c.id === selectedCompId)) {
+    selectLeaderboardComp(selectedCompId);
+  } else if (comps.length) {
+    selectLeaderboardComp(comps[0].id);
+  }
+}
+
+async function selectLeaderboardComp(id) {
+  selectedCompId = id;
+  document.querySelectorAll('#lb-comp-list .comp-item').forEach((el, i) => {});
+  const comps = await api('/api/competitions');
+  comps.forEach((c, i) => {
+    document.querySelectorAll('#lb-comp-list .comp-item')[i]?.classList.toggle('selected', c.id === id);
+  });
+  const comp = comps.find(c => c.id === id);
+
+  const compResults = await api(`/api/results/${id}`);
+  const section = document.getElementById('lb-results-section');
+  section.style.display = 'block';
+
+  document.getElementById('lb-comp-title').textContent = `${comp?.name || ''} — ${comp?.discipline || ''}`;
+
+  const tbody = document.getElementById('lb-results-body');
+  if (!compResults.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No scores yet</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = compResults.map((r, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+    return `<tr>
+      <td><span class="rank-badge ${rankClass}">${i + 1}</span></td>
+      <td><strong>${escapeAttr(r.shooterName)}</strong></td>
+      <td><span style="color:var(--muted);font-size:12px">${escapeAttr(r.shooterClass || '—')}</span></td>
+      <td style="text-align:right"><span class="score-big">${r.total}</span> <span style="color:var(--muted);font-size:11px">/ ${comp?.maxScore || 25}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteResult(${r.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteCompetition(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this competition and all its scores?')) return;
+  await api(`/api/competitions/${id}`, { method: 'DELETE' });
+  if (selectedCompId === id) selectedCompId = null;
+  refreshLeaderboard();
+  toast('Deleted');
+}
+
+async function deleteResult(id) {
+  if (!confirm('Remove this score?')) return;
+  await api(`/api/results/${id}`, { method: 'DELETE' });
+  selectLeaderboardComp(selectedCompId);
+  toast('Score removed');
+}
+
+async function exportExcel() {
+  if (!selectedCompId) return toast('Select a competition first', 'error');
+  try {
+    const r = await fetch('/api/export/excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ competitionId: selectedCompId })
+    });
+    if (!r.ok) throw new Error('Export failed');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Maccauw_Results.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Excel downloaded ✓');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Manual entry ──────────────────────────────────────────────────────────
+async function refreshManualCompSelect() {
+  const comps = await api('/api/competitions');
+  const sel = document.getElementById('manual-comp-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select competition —</option>' +
+    comps.map(c => `<option value="${c.id}">${escapeAttr(c.name)} (${escapeAttr(c.discipline)}) — ${new Date(c.date).toLocaleDateString('af-ZA')}</option>`).join('') +
+    '<option value="__new__">+ New Competition</option>';
+  if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+function onManualCompChange() {
+  const val = document.getElementById('manual-comp-select').value;
+  const newCompSection = document.getElementById('manual-new-comp');
+  const form = document.getElementById('manual-form');
+  const placeholder = document.getElementById('manual-placeholder');
+
+  if (val === '__new__') {
+    newCompSection.style.display = 'block';
+    form.style.display = 'none';
+    placeholder.style.display = 'none';
+    manualCompId = null;
+    document.getElementById('manual-comp-date').value = new Date().toISOString().split('T')[0];
+  } else if (val) {
+    newCompSection.style.display = 'none';
+    manualCompId = parseInt(val);
+    startManualScoreEntry();
+  } else {
+    newCompSection.style.display = 'none';
+    form.style.display = 'none';
+    placeholder.style.display = 'block';
+    manualCompId = null;
+  }
+}
+
+async function createManualCompetition() {
+  const name = document.getElementById('manual-comp-name').value.trim();
+  const date = document.getElementById('manual-comp-date').value;
+  const discipline = document.getElementById('manual-comp-discipline').value.trim();
+  const maxScore = parseInt(document.getElementById('manual-comp-maxscore').value) || 25;
+
+  if (!name || !date || !discipline) return toast('Name, date and discipline required', 'error');
+
+  try {
+    const comp = await api('/api/competitions', {
+      method: 'POST',
+      body: JSON.stringify({ name, date, discipline, maxScore })
+    });
+    manualCompId = comp.id;
+    await refreshManualCompSelect();
+    document.getElementById('manual-comp-select').value = comp.id;
+    document.getElementById('manual-new-comp').style.display = 'none';
+    toast('Competition created ✓');
+    startManualScoreEntry();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function startManualScoreEntry() {
+  document.getElementById('manual-placeholder').style.display = 'none';
+  document.getElementById('manual-form').style.display = 'block';
+  document.getElementById('manual-shooter-list').innerHTML = '';
+  for (let i = 0; i < 6; i++) addManualShooterRow();
+}
+
+function addManualShooterRow() {
+  const container = document.getElementById('manual-shooter-list');
+  const row = document.createElement('div');
+  row.className = 'shooter-entry';
+  row.innerHTML = `
+    <input class="name-input" type="text" placeholder="Name" autocomplete="off" autocorrect="off">
+    <select class="class-select">
+      <option value="">—</option>
+      <option>AA</option><option>A</option><option>B</option><option>C</option><option>D</option>
+    </select>
+    <input class="score-input" type="number" min="0" max="200" placeholder="0" inputmode="numeric">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+async function saveManualScores() {
+  if (!manualCompId) return toast('Select a competition', 'error');
+
+  const rows = document.querySelectorAll('#manual-shooter-list .shooter-entry');
+  let saved = 0;
+
+  for (const row of rows) {
+    const name = row.querySelector('.name-input').value.trim();
+    const score = parseInt(row.querySelector('.score-input').value);
+    const cls = row.querySelector('.class-select').value;
+
+    if (!name || isNaN(score)) continue;
+
+    await api('/api/results', {
+      method: 'POST',
+      body: JSON.stringify({ competitionId: manualCompId, shooterName: name, shooterClass: cls, total: score })
+    });
+    saved++;
+  }
+
+  if (saved > 0) {
+    toast(`${saved} score(s) saved ✓`);
+    selectedCompId = manualCompId;
+    showPage('leaderboard');
+  } else {
+    toast('No valid scores to save', 'error');
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderPhotoGrid();
+</script>
+</body>
+</html>
