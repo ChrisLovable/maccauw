@@ -7,25 +7,35 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const PROMPT = `You are reading 1-4 photos of clay target shooting scorecards from Maccauw Clay Target Club. Each photo shows a scorecard for ONE discipline from the same competition/event — different photos may cover different disciplines (ATA Trap, DTL, Doubles), or multiple photos may cover the same discipline's card.
 
+SCORECARD LAYOUT:
+Each card has two parts:
+1. NAME SHEET — a left-hand column listing shooter names in numbered slots (1, 2, 3, 4, 5, 6, ...), with class (AA/A/B/C/D) often alongside.
+2. SCORE SHEET — to the right, one numbered row per slot showing a COUNTDOWN of numbers across the row, followed by a printed TOTAL column/box at the end of the row.
+
+Match shooters to score rows BY POSITION NUMBER: slot 1's name corresponds to row 1's score, slot 2 to row 2, and so on — not by visual proximity.
+
 For each photo:
 1. Determine which discipline it shows:
    - "ata" — ATA Trap (single targets, commonly out of 25)
    - "dtl" — Down-The-Line / DTL (single targets, commonly out of 25)
    - "doubles" — any doubles event (ATA Trap Doubles, Universal Trench doubles, etc — commonly out of 50)
    Infer from labels, headings, and column layout.
-2. Read every shooter row: name (often handwritten, sometimes cursive), class if shown (AA/A/B/C/D), and that shooter's score for THIS discipline (the round score out of 25 for ATA/DTL, or out of 50 for Doubles).
+2. For each numbered row:
+   - Read the shooter's name and class from the NAME SHEET at that position number.
+   - COUNTDOWN SCORING: each row starts at the maximum for the discipline (25, or 50 for doubles), and the written number drops by 1 for each miss. A diagonal slash (/) marks a hit — for a hit, no new number is written and the previous written number still applies.
+   - The shooter's final_score for THIS discipline is the LAST number actually written in the countdown sequence (reading left to right across the row), BEFORE the printed TOTAL column.
+   - DO NOT read the printed TOTAL column/box on the score sheet — derive final_score only from the last countdown number written in the row.
 
-Extract ATA, DTL and Doubles scores per shooter. IGNORE the Totaal column completely — do not extract it. The app will calculate the total itself.
+Extract ATA, DTL and Doubles scores (each discipline's final_score, matched by position number) per shooter. IGNORE the printed TOTAL column completely — never extract it. The overall Totaal is always computed by the app as ATA + DTL + Doubles.
 
 Then MERGE all photos into ONE list of shooters:
-- Match the same shooter across photos by name, allowing for minor handwriting/spelling variation (treat as the same person).
-- For each shooter, populate "ata", "dtl", "doubles" with that shooter's score from the matching discipline's scorecard if present, otherwise null. A shooter who only appears on one card should have the other two fields as null.
+- Match the same shooter across photos first by position number, then confirm/refine using name (allowing for minor handwriting/spelling variation — treat as the same person).
+- For each shooter, populate "ata", "dtl", "doubles" with that shooter's final_score from the matching discipline's scorecard if present, otherwise null. A shooter who only appears on one card should have the other two fields as null.
 
 SCORING NOTES:
-- The scoring system often uses a running countdown: numbers in cells show hits remaining, and a diagonal slash (/) marks a hit.
 - Pre-printed diagonal lines on the card template are not marks — ignore them.
 - Only include shooters who have a name written. Skip blank rows.
-- Never read or report a "Totaal"/"Total" column value — only the per-discipline ATA/DTL/Doubles scores matter; totals are computed by the app as ATA + DTL + Doubles (treating any missing discipline as 0).
+- Never read or report any "Totaal"/"Total" column value, on any sheet — totals are always computed by the app as ATA + DTL + Doubles (treating any missing discipline as 0).
 
 Also extract:
 - "competition": the name/title of the competition or event written on the card(s). If not visible, use null.
