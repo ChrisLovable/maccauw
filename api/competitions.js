@@ -1,14 +1,9 @@
-const supabase = require('../lib/supabase');
+const store = require('../lib/store');
 const { toCompetitionJson } = require('../lib/format');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('competitions')
-      .select('*')
-      .order('date', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json(data.map(toCompetitionJson));
+    return res.json(store.listCompetitions().map(toCompetitionJson));
   }
 
   if (req.method === 'POST') {
@@ -16,20 +11,14 @@ module.exports = async (req, res) => {
     if (!name || !date) {
       return res.status(400).json({ error: 'name and date required' });
     }
-    const { data, error } = await supabase
-      .from('competitions')
-      .insert({ name, date })
-      .select()
-      .single();
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json(toCompetitionJson(data));
+    const comp = store.createCompetition({ name, date });
+    return res.json(toCompetitionJson(comp));
   }
 
   if (req.method === 'DELETE') {
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id required' });
-    const { error } = await supabase.from('competitions').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    store.deleteCompetition(id);
     return res.json({ ok: true });
   }
 

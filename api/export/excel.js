@@ -1,5 +1,5 @@
 const ExcelJS = require('exceljs');
-const supabase = require('../../lib/supabase');
+const store = require('../../lib/store');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -10,20 +10,10 @@ module.exports = async (req, res) => {
   try {
     const { competitionId } = req.body;
 
-    const { data: comp, error: compErr } = await supabase
-      .from('competitions')
-      .select('*')
-      .eq('id', competitionId)
-      .maybeSingle();
-    if (compErr) throw compErr;
+    const comp = store.findCompetition(competitionId);
     if (!comp) return res.status(404).json({ error: 'Competition not found' });
 
-    const { data: compResults, error: resErr } = await supabase
-      .from('results')
-      .select('*')
-      .eq('competition_id', competitionId)
-      .order('total', { ascending: false });
-    if (resErr) throw resErr;
+    const compResults = store.listResults(competitionId);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Maccauw Clay Target Club';

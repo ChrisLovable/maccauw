@@ -1,4 +1,4 @@
-const supabase = require('../lib/supabase');
+const store = require('../lib/store');
 const { toResultJson } = require('../lib/format');
 const { upsertResult } = require('../lib/results');
 
@@ -24,12 +24,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const competitionId = parseInt(req.query.competitionId);
     if (!competitionId) return res.status(400).json({ error: 'competitionId required' });
-    const { data, error } = await supabase
-      .from('results')
-      .select('*')
-      .eq('competition_id', competitionId)
-      .order('total', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    const data = store.listResults(competitionId);
     const withRank = data.map((r, i) => ({ ...toResultJson(r), rank: i + 1 }));
     return res.json(withRank);
   }
@@ -44,21 +39,15 @@ module.exports = async (req, res) => {
     if (req.body.dtl !== undefined) updates.dtl_score = req.body.dtl;
     if (req.body.doubles !== undefined) updates.doubles_score = req.body.doubles;
 
-    const { data, error } = await supabase
-      .from('results')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) return res.status(404).json({ error: error.message });
-    return res.json(toResultJson(data));
+    const updated = store.updateResult(id, updates);
+    if (!updated) return res.status(404).json({ error: 'Result not found' });
+    return res.json(toResultJson(updated));
   }
 
   if (req.method === 'DELETE') {
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id required' });
-    const { error } = await supabase.from('results').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    store.deleteResult(id);
     return res.json({ ok: true });
   }
 

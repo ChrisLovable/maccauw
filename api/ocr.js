@@ -1,5 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const supabase = require('../lib/supabase');
+const store = require('../lib/store');
 const { toCompetitionJson } = require('../lib/format');
 const { upsertResult } = require('../lib/results');
 
@@ -94,25 +94,9 @@ async function confirmScan(req, res) {
   }
 
   try {
-    let comp;
-    const { data: existing, error: findErr } = await supabase
-      .from('competitions')
-      .select('*')
-      .ilike('name', competition.name)
-      .eq('date', competition.date)
-      .maybeSingle();
-    if (findErr) throw findErr;
-
-    if (existing) {
-      comp = existing;
-    } else {
-      const { data, error } = await supabase
-        .from('competitions')
-        .insert({ name: competition.name, date: competition.date })
-        .select()
-        .single();
-      if (error) throw error;
-      comp = data;
+    let comp = store.findCompetitionByNameDate(competition.name, competition.date);
+    if (!comp) {
+      comp = store.createCompetition({ name: competition.name, date: competition.date });
     }
 
     let saved = 0;
