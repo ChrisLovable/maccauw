@@ -1,6 +1,6 @@
-const supabase = require('../../lib/supabase');
-const { toCompetitionJson } = require('../../lib/format');
-const { maxScoreFor } = require('../../lib/disciplines');
+const supabase = require('../lib/supabase');
+const { toCompetitionJson } = require('../lib/format');
+const { maxScoreFor } = require('../lib/disciplines');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -26,6 +26,14 @@ module.exports = async (req, res) => {
     return res.json(toCompetitionJson(data));
   }
 
-  res.setHeader('Allow', 'GET, POST');
+  if (req.method === 'DELETE') {
+    const id = parseInt(req.query.id);
+    if (!id) return res.status(400).json({ error: 'id required' });
+    const { error } = await supabase.from('competitions').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE');
   res.status(405).json({ error: 'Method not allowed' });
 };

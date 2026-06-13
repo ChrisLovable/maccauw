@@ -631,7 +631,7 @@ async function runScan() {
   btn.innerHTML = '<span class="spinner"></span> Scanning...';
 
   try {
-    const { data } = await api('/api/scan', {
+    const { data } = await api('/api/ocr', {
       method: 'POST',
       body: JSON.stringify({ photos })
     });
@@ -738,7 +738,7 @@ async function confirmScan() {
   btn.innerHTML = '<span class="spinner"></span> Saving...';
 
   try {
-    const res = await api('/api/scan/confirm', {
+    const res = await api('/api/ocr?action=confirm', {
       method: 'POST',
       body: JSON.stringify({ competition, shooters })
     });
@@ -792,7 +792,7 @@ async function selectLeaderboardComp(id) {
   });
   const comp = comps.find(c => c.id === id);
 
-  const compResults = await api(`/api/results/${id}`);
+  const compResults = await api(`/api/results?competitionId=${id}`);
   const section = document.getElementById('lb-results-section');
   section.style.display = 'block';
 
@@ -819,7 +819,7 @@ async function selectLeaderboardComp(id) {
 async function deleteCompetition(id, e) {
   e.stopPropagation();
   if (!confirm('Delete this competition and all its scores?')) return;
-  await api(`/api/competitions/${id}`, { method: 'DELETE' });
+  await api(`/api/competitions?id=${id}`, { method: 'DELETE' });
   if (selectedCompId === id) selectedCompId = null;
   refreshLeaderboard();
   toast('Deleted');
@@ -827,7 +827,7 @@ async function deleteCompetition(id, e) {
 
 async function deleteResult(id) {
   if (!confirm('Remove this score?')) return;
-  await api(`/api/results/${id}`, { method: 'DELETE' });
+  await api(`/api/results?id=${id}`, { method: 'DELETE' });
   selectLeaderboardComp(selectedCompId);
   toast('Score removed');
 }
