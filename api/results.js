@@ -4,12 +4,17 @@ const { upsertResult } = require('../lib/results');
 
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const { competitionId, shooterName, shooterClass, total } = req.body;
-    if (!competitionId || !shooterName || total === undefined) {
-      return res.status(400).json({ error: 'competitionId, shooterName, total required' });
+    const { competitionId, shooterName, shooterClass, ata, dtl, doubles } = req.body;
+    if (!competitionId || !shooterName) {
+      return res.status(400).json({ error: 'competitionId and shooterName required' });
     }
+    const scores = {};
+    if (ata !== undefined) scores.ata = ata;
+    if (dtl !== undefined) scores.dtl = dtl;
+    if (doubles !== undefined) scores.doubles = doubles;
+
     try {
-      const result = await upsertResult(competitionId, shooterName.trim(), shooterClass, total);
+      const result = await upsertResult(competitionId, shooterName.trim(), shooterClass, scores);
       return res.json(result);
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -32,11 +37,12 @@ module.exports = async (req, res) => {
   if (req.method === 'PUT') {
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id required' });
-    const updates = {};
+    const updates = { updated_at: new Date().toISOString() };
     if (req.body.shooterName !== undefined) updates.shooter_name = req.body.shooterName;
     if (req.body.shooterClass !== undefined) updates.shooter_class = req.body.shooterClass;
-    if (req.body.total !== undefined) updates.total = req.body.total;
-    updates.updated_at = new Date().toISOString();
+    if (req.body.ata !== undefined) updates.ata_score = req.body.ata;
+    if (req.body.dtl !== undefined) updates.dtl_score = req.body.dtl;
+    if (req.body.doubles !== undefined) updates.doubles_score = req.body.doubles;
 
     const { data, error } = await supabase
       .from('results')

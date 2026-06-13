@@ -162,16 +162,6 @@
   }
   .comp-item:hover { border-color: var(--gold); }
   .comp-item.selected { border-color: var(--gold); background: rgba(212,175,55,0.08); }
-  .comp-badge {
-    background: var(--gold);
-    color: var(--bg);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
   .comp-info { flex: 1; min-width: 0; }
   .comp-info strong { font-size: 14px; display: block; }
   .comp-info small { color: var(--muted); font-size: 11px; display: block; }
@@ -211,28 +201,29 @@
   .score-big { font-size: 18px; font-weight: 700; color: var(--gold); }
 
   /* ── Shooter entry rows (manual + scan results) ── */
-  .shooter-entry {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .shooter-row {
     padding: 10px;
     background: var(--surface2);
     border-radius: 8px;
     margin-bottom: 8px;
     border-left: 3px solid transparent;
   }
-  .shooter-entry.low-confidence { border-left-color: var(--orange); }
-  .shooter-entry .name-input { flex: 1; min-width: 0; }
-  .shooter-entry .class-select { flex: 0 0 64px; }
-  .shooter-entry .score-input {
-    flex: 0 0 64px;
+  .shooter-row.low-confidence { border-left-color: var(--orange); }
+  .shooter-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .shooter-row-top .name-input { flex: 1; min-width: 0; }
+  .shooter-row-top .class-select { flex: 0 0 64px; }
+  .shooter-row-top .confidence-flag { flex: 0 0 18px; text-align: center; color: var(--orange); font-size: 13px; }
+  .shooter-row-top .row-num { flex: 0 0 20px; color: var(--muted); font-size: 12px; text-align: center; }
+  .shooter-row-scores { display: flex; gap: 8px; }
+  .score-field { flex: 1; min-width: 0; }
+  .score-field label { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+  .score-field .score-input {
+    width: 100%;
     font-size: 18px !important;
     font-weight: 700 !important;
     text-align: center !important;
     color: var(--gold) !important;
   }
-  .shooter-entry .confidence-flag { flex: 0 0 18px; text-align: center; color: var(--orange); font-size: 13px; }
-  .shooter-entry .row-num { flex: 0 0 20px; color: var(--muted); font-size: 12px; text-align: center; }
 
   /* ── Camera / Upload ── */
   .drop-zone {
@@ -329,8 +320,7 @@
   .row-actions { display: flex; gap: 6px; }
 
   @media (max-width: 380px) {
-    .shooter-entry .class-select { flex: 0 0 56px; }
-    .shooter-entry .score-input { flex: 0 0 56px; }
+    .shooter-row-top .class-select { flex: 0 0 56px; }
   }
 </style>
 </head>
@@ -345,19 +335,19 @@
 </div>
 
 <nav class="nav">
-  <button class="nav-btn active" onclick="showPage('scan')">📷 Scan</button>
-  <button class="nav-btn" onclick="showPage('leaderboard')">🏆 Leaderboard</button>
+  <button class="nav-btn" onclick="showPage('scan')">📷 Scan</button>
+  <button class="nav-btn active" onclick="showPage('leaderboard')">📊 Summary</button>
   <button class="nav-btn" onclick="showPage('manual')">✏️ Manual</button>
 </nav>
 
 <!-- ══ SCAN (HOME) ════════════════════════════════════════════════════════ -->
-<div id="page-scan" class="page active">
+<div id="page-scan" class="page">
 
   <!-- Upload step -->
   <div id="scan-upload">
     <div class="card">
       <div class="card-title">📷 Scan Scorecard</div>
-      <div class="card-subtitle">Take or upload up to 4 photos. Claude reads the competition name, date, discipline and every shooter's score automatically.</div>
+      <div class="card-subtitle">Take or upload up to 4 photos — one per discipline (ATA Trap, DTL, Doubles). Claude reads the competition name, date and matches each shooter's ATA/DTL/Doubles scores automatically.</div>
 
       <div class="drop-zone" id="drop-zone">
         <input type="file" id="photo-input" accept="image/*" multiple capture="environment" onchange="handlePhotoSelect(event)">
@@ -385,19 +375,9 @@
         <label>Competition Name</label>
         <input type="text" id="scan-comp-name" placeholder="e.g. Club Monthly — June 2026">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="scan-comp-date">
-        </div>
-        <div class="form-group">
-          <label>Discipline</label>
-          <input type="text" id="scan-comp-discipline" list="discipline-options" placeholder="e.g. ATA Trap">
-        </div>
-      </div>
       <div class="form-group">
-        <label>Targets per Round (Out of)</label>
-        <input type="number" id="scan-comp-maxscore" min="1" max="200" inputmode="numeric">
+        <label>Date</label>
+        <input type="date" id="scan-comp-date">
       </div>
     </div>
 
@@ -415,7 +395,7 @@
 </div>
 
 <!-- ══ LEADERBOARD ════════════════════════════════════════════════════════ -->
-<div id="page-leaderboard" class="page">
+<div id="page-leaderboard" class="page active">
   <div class="card">
     <div class="card-title">🏆 Competitions</div>
     <div id="lb-comp-list">
@@ -434,11 +414,13 @@
       <table class="lb-table">
         <thead>
           <tr>
-            <th style="width:50px">#</th>
-            <th>Name</th>
-            <th>Class</th>
-            <th style="text-align:right">Score</th>
-            <th style="width:60px"></th>
+            <th style="width:42px">#</th>
+            <th>Naam</th>
+            <th style="text-align:center">ATA</th>
+            <th style="text-align:center">DTL</th>
+            <th style="text-align:center">Doubles</th>
+            <th style="text-align:right">Totaal</th>
+            <th style="width:40px"></th>
           </tr>
         </thead>
         <tbody id="lb-results-body"></tbody>
@@ -464,19 +446,9 @@
         <label>Competition Name</label>
         <input type="text" id="manual-comp-name" placeholder="e.g. Club Monthly — June 2026">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="manual-comp-date">
-        </div>
-        <div class="form-group">
-          <label>Discipline</label>
-          <input type="text" id="manual-comp-discipline" list="discipline-options" placeholder="e.g. ATA Trap">
-        </div>
-      </div>
       <div class="form-group">
-        <label>Targets per Round (Out of)</label>
-        <input type="number" id="manual-comp-maxscore" min="1" max="200" value="25" inputmode="numeric">
+        <label>Date</label>
+        <input type="date" id="manual-comp-date">
       </div>
       <button class="btn btn-primary btn-block" onclick="createManualCompetition()">Create Competition</button>
     </div>
@@ -496,15 +468,6 @@
     <p>Select or create a competition above to enter scores manually.</p>
   </div>
 </div>
-
-<datalist id="discipline-options">
-  <option value="ATA Trap">
-  <option value="ATA Trap Doubles">
-  <option value="NSSA Skeet">
-  <option value="NSSA Skeet Doubles">
-  <option value="Universal Trench">
-  <option value="DTL">
-</datalist>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -639,12 +602,12 @@ async function runScan() {
     scanData = {
       competition: data.competition || '',
       date: data.date || new Date().toISOString().split('T')[0],
-      discipline: data.discipline || '',
-      maxScore: data.maxScore || 25,
       shooters: (data.shooters || []).map(s => ({
         name: s.name || '',
         class: s.class || '',
-        total: s.total ?? '',
+        ata: s.ata ?? '',
+        dtl: s.dtl ?? '',
+        doubles: s.doubles ?? '',
         confidence: s.confidence || 'high'
       }))
     };
@@ -665,41 +628,56 @@ async function runScan() {
 function renderScanResults() {
   document.getElementById('scan-comp-name').value = scanData.competition;
   document.getElementById('scan-comp-date').value = scanData.date;
-  document.getElementById('scan-comp-discipline').value = scanData.discipline;
-  document.getElementById('scan-comp-maxscore').value = scanData.maxScore;
   renderScanShooterList();
 }
 
 function renderScanShooterList() {
   const container = document.getElementById('scan-shooter-list');
   container.innerHTML = scanData.shooters.map((s, i) => `
-    <div class="shooter-entry ${s.confidence === 'low' ? 'low-confidence' : ''}">
-      <span class="row-num">${i + 1}</span>
-      <input class="name-input" type="text" value="${escapeAttr(s.name)}" placeholder="Name" oninput="updateScanShooter(${i}, 'name', this.value)">
-      <select class="class-select" onchange="updateScanShooter(${i}, 'class', this.value)">
-        <option value="">—</option>
-        <option ${s.class === 'AA' ? 'selected' : ''}>AA</option>
-        <option ${s.class === 'A' ? 'selected' : ''}>A</option>
-        <option ${s.class === 'B' ? 'selected' : ''}>B</option>
-        <option ${s.class === 'C' ? 'selected' : ''}>C</option>
-        <option ${s.class === 'D' ? 'selected' : ''}>D</option>
-      </select>
-      <input class="score-input" type="number" value="${escapeAttr(s.total)}" min="0" max="200" inputmode="numeric" oninput="updateScanShooter(${i}, 'total', this.value)">
-      ${s.confidence === 'low' ? '<span class="confidence-flag" title="Low confidence — please check">⚠️</span>' : '<button class="btn btn-danger btn-sm" onclick="removeScanShooterRow(' + i + ')">✕</button>'}
+    <div class="shooter-row ${s.confidence === 'low' ? 'low-confidence' : ''}">
+      <div class="shooter-row-top">
+        <span class="row-num">${i + 1}</span>
+        <input class="name-input" type="text" value="${escapeAttr(s.name)}" placeholder="Name" oninput="updateScanShooter(${i}, 'name', this.value)">
+        <select class="class-select" onchange="updateScanShooter(${i}, 'class', this.value)">
+          <option value="">—</option>
+          <option ${s.class === 'AA' ? 'selected' : ''}>AA</option>
+          <option ${s.class === 'A' ? 'selected' : ''}>A</option>
+          <option ${s.class === 'B' ? 'selected' : ''}>B</option>
+          <option ${s.class === 'C' ? 'selected' : ''}>C</option>
+          <option ${s.class === 'D' ? 'selected' : ''}>D</option>
+        </select>
+        ${s.confidence === 'low' ? '<span class="confidence-flag" title="Low confidence — please check">⚠️</span>' : ''}
+        <button class="btn btn-danger btn-sm" onclick="removeScanShooterRow(${i})">✕</button>
+      </div>
+      <div class="shooter-row-scores">
+        <div class="score-field">
+          <label>ATA</label>
+          <input class="score-input" type="number" value="${escapeAttr(s.ata)}" min="0" max="50" inputmode="numeric" oninput="updateScanShooter(${i}, 'ata', this.value)">
+        </div>
+        <div class="score-field">
+          <label>DTL</label>
+          <input class="score-input" type="number" value="${escapeAttr(s.dtl)}" min="0" max="50" inputmode="numeric" oninput="updateScanShooter(${i}, 'dtl', this.value)">
+        </div>
+        <div class="score-field">
+          <label>Doubles</label>
+          <input class="score-input" type="number" value="${escapeAttr(s.doubles)}" min="0" max="100" inputmode="numeric" oninput="updateScanShooter(${i}, 'doubles', this.value)">
+        </div>
+      </div>
     </div>
   `).join('');
 }
 
 function escapeAttr(v) {
+  if (v === null || v === undefined) return '';
   return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 function updateScanShooter(idx, field, value) {
-  scanData.shooters[idx][field] = field === 'total' ? value : value;
+  scanData.shooters[idx][field] = value;
 }
 
 function addScanShooterRow() {
-  scanData.shooters.push({ name: '', class: '', total: '', confidence: 'high' });
+  scanData.shooters.push({ name: '', class: '', ata: '', dtl: '', doubles: '', confidence: 'high' });
   renderScanShooterList();
 }
 
@@ -718,18 +696,21 @@ function discardScan() {
 async function confirmScan() {
   const competition = {
     name: document.getElementById('scan-comp-name').value.trim(),
-    date: document.getElementById('scan-comp-date').value,
-    discipline: document.getElementById('scan-comp-discipline').value.trim(),
-    maxScore: parseInt(document.getElementById('scan-comp-maxscore').value) || 25
+    date: document.getElementById('scan-comp-date').value
   };
 
   if (!competition.name) return toast('Enter a competition name', 'error');
   if (!competition.date) return toast('Enter a date', 'error');
-  if (!competition.discipline) return toast('Enter a discipline', 'error');
 
   const shooters = scanData.shooters
-    .filter(s => s.name.trim() && s.total !== '' && s.total !== null)
-    .map(s => ({ name: s.name.trim(), class: s.class, total: Number(s.total) }));
+    .filter(s => s.name.trim() && (s.ata !== '' || s.dtl !== '' || s.doubles !== ''))
+    .map(s => ({
+      name: s.name.trim(),
+      class: s.class,
+      ata: s.ata === '' || s.ata === null || s.ata === undefined ? null : Number(s.ata),
+      dtl: s.dtl === '' || s.dtl === null || s.dtl === undefined ? null : Number(s.dtl),
+      doubles: s.doubles === '' || s.doubles === null || s.doubles === undefined ? null : Number(s.doubles)
+    }));
 
   if (!shooters.length) return toast('Add at least one shooter with a score', 'error');
 
@@ -767,7 +748,6 @@ async function refreshLeaderboard() {
 
   el.innerHTML = comps.map(c => `
     <div class="comp-item ${selectedCompId === c.id ? 'selected' : ''}" onclick="selectLeaderboardComp(${c.id})">
-      <span class="comp-badge">${escapeAttr(c.discipline)}</span>
       <div class="comp-info">
         <strong>${escapeAttr(c.name)}</strong>
         <small>${new Date(c.date).toLocaleDateString('af-ZA')}</small>
@@ -796,11 +776,11 @@ async function selectLeaderboardComp(id) {
   const section = document.getElementById('lb-results-section');
   section.style.display = 'block';
 
-  document.getElementById('lb-comp-title').textContent = `${comp?.name || ''} — ${comp?.discipline || ''}`;
+  document.getElementById('lb-comp-title').textContent = `${comp?.name || ''} — ${comp ? new Date(comp.date).toLocaleDateString('af-ZA') : ''}`;
 
   const tbody = document.getElementById('lb-results-body');
   if (!compResults.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No scores yet</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No scores yet</td></tr>`;
     return;
   }
 
@@ -809,8 +789,10 @@ async function selectLeaderboardComp(id) {
     return `<tr>
       <td><span class="rank-badge ${rankClass}">${i + 1}</span></td>
       <td><strong>${escapeAttr(r.shooterName)}</strong></td>
-      <td><span style="color:var(--muted);font-size:12px">${escapeAttr(r.shooterClass || '—')}</span></td>
-      <td style="text-align:right"><span class="score-big">${r.total}</span> <span style="color:var(--muted);font-size:11px">/ ${comp?.maxScore || 25}</span></td>
+      <td style="text-align:center">${r.ata ?? '—'}</td>
+      <td style="text-align:center">${r.dtl ?? '—'}</td>
+      <td style="text-align:center">${r.doubles ?? '—'}</td>
+      <td style="text-align:right"><span class="score-big">${r.total}</span></td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteResult(${r.id})">✕</button></td>
     </tr>`;
   }).join('');
@@ -858,7 +840,7 @@ async function refreshManualCompSelect() {
   const sel = document.getElementById('manual-comp-select');
   const current = sel.value;
   sel.innerHTML = '<option value="">— Select competition —</option>' +
-    comps.map(c => `<option value="${c.id}">${escapeAttr(c.name)} (${escapeAttr(c.discipline)}) — ${new Date(c.date).toLocaleDateString('af-ZA')}</option>`).join('') +
+    comps.map(c => `<option value="${c.id}">${escapeAttr(c.name)} — ${new Date(c.date).toLocaleDateString('af-ZA')}</option>`).join('') +
     '<option value="__new__">+ New Competition</option>';
   if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
 }
@@ -890,15 +872,13 @@ function onManualCompChange() {
 async function createManualCompetition() {
   const name = document.getElementById('manual-comp-name').value.trim();
   const date = document.getElementById('manual-comp-date').value;
-  const discipline = document.getElementById('manual-comp-discipline').value.trim();
-  const maxScore = parseInt(document.getElementById('manual-comp-maxscore').value) || 25;
 
-  if (!name || !date || !discipline) return toast('Name, date and discipline required', 'error');
+  if (!name || !date) return toast('Name and date required', 'error');
 
   try {
     const comp = await api('/api/competitions', {
       method: 'POST',
-      body: JSON.stringify({ name, date, discipline, maxScore })
+      body: JSON.stringify({ name, date })
     });
     manualCompId = comp.id;
     await refreshManualCompSelect();
@@ -919,15 +899,30 @@ function startManualScoreEntry() {
 function addManualShooterRow() {
   const container = document.getElementById('manual-shooter-list');
   const row = document.createElement('div');
-  row.className = 'shooter-entry';
+  row.className = 'shooter-row';
   row.innerHTML = `
-    <input class="name-input" type="text" placeholder="Name" autocomplete="off" autocorrect="off">
-    <select class="class-select">
-      <option value="">—</option>
-      <option>AA</option><option>A</option><option>B</option><option>C</option><option>D</option>
-    </select>
-    <input class="score-input" type="number" min="0" max="200" placeholder="0" inputmode="numeric">
-    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+    <div class="shooter-row-top">
+      <input class="name-input" type="text" placeholder="Name" autocomplete="off" autocorrect="off">
+      <select class="class-select">
+        <option value="">—</option>
+        <option>AA</option><option>A</option><option>B</option><option>C</option><option>D</option>
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="this.closest('.shooter-row').remove()">✕</button>
+    </div>
+    <div class="shooter-row-scores">
+      <div class="score-field">
+        <label>ATA</label>
+        <input class="score-input ata-input" type="number" min="0" max="50" placeholder="—" inputmode="numeric">
+      </div>
+      <div class="score-field">
+        <label>DTL</label>
+        <input class="score-input dtl-input" type="number" min="0" max="50" placeholder="—" inputmode="numeric">
+      </div>
+      <div class="score-field">
+        <label>Doubles</label>
+        <input class="score-input doubles-input" type="number" min="0" max="100" placeholder="—" inputmode="numeric">
+      </div>
+    </div>
   `;
   container.appendChild(row);
 }
@@ -935,19 +930,26 @@ function addManualShooterRow() {
 async function saveManualScores() {
   if (!manualCompId) return toast('Select a competition', 'error');
 
-  const rows = document.querySelectorAll('#manual-shooter-list .shooter-entry');
+  const rows = document.querySelectorAll('#manual-shooter-list .shooter-row');
   let saved = 0;
 
   for (const row of rows) {
     const name = row.querySelector('.name-input').value.trim();
-    const score = parseInt(row.querySelector('.score-input').value);
     const cls = row.querySelector('.class-select').value;
+    const ataVal = row.querySelector('.ata-input').value;
+    const dtlVal = row.querySelector('.dtl-input').value;
+    const doublesVal = row.querySelector('.doubles-input').value;
 
-    if (!name || isNaN(score)) continue;
+    if (!name || (ataVal === '' && dtlVal === '' && doublesVal === '')) continue;
+
+    const body = { competitionId: manualCompId, shooterName: name, shooterClass: cls };
+    if (ataVal !== '') body.ata = parseInt(ataVal);
+    if (dtlVal !== '') body.dtl = parseInt(dtlVal);
+    if (doublesVal !== '') body.doubles = parseInt(doublesVal);
 
     await api('/api/results', {
       method: 'POST',
-      body: JSON.stringify({ competitionId: manualCompId, shooterName: name, shooterClass: cls, total: score })
+      body: JSON.stringify(body)
     });
     saved++;
   }
@@ -963,6 +965,7 @@ async function saveManualScores() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 renderPhotoGrid();
+refreshLeaderboard();
 </script>
 </body>
 </html>

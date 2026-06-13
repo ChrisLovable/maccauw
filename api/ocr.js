@@ -1,39 +1,39 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const supabase = require('../lib/supabase');
-const { maxScoreFor } = require('../lib/disciplines');
 const { toCompetitionJson } = require('../lib/format');
 const { upsertResult } = require('../lib/results');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const PROMPT = `You are reading 1-4 photos of a clay target shooting scorecard from Maccauw Clay Target Club. The photos may show different parts of the same scorecard, or multiple scorecards from the same competition — treat them together as one combined record.
+const PROMPT = `You are reading 1-4 photos of clay target shooting scorecards from Maccauw Clay Target Club. Each photo shows a scorecard for ONE discipline from the same competition/event — different photos may cover different disciplines (ATA Trap, DTL, Doubles), or multiple photos may cover the same discipline's card.
 
-From the scorecard(s), determine:
-1. "competition": the name/title of the competition or event written on the card (e.g. "Club Monthly Shoot", "President's Trophy"). If not visible, use null.
-2. "date": the date of the event, formatted as YYYY-MM-DD. If not visible, use null.
-3. "discipline": the shooting discipline printed or written on the card (e.g. "ATA Trap", "ATA Trap Doubles", "NSSA Skeet", "NSSA Skeet Doubles", "Universal Trench", "DTL"). Infer from labels, column counts, and layout.
-4. "maxScore": the total number of targets for the round, as shown on the card (commonly 25 or 50).
-5. "shooters": every shooter row across the card(s), each with:
-   - "name": the shooter's name (handwritten, often cursive)
-   - "class": shooting class if shown (AA/A/B/C/D), else null
-   - "total": final score for the round (a number from 0 to maxScore)
-   - "confidence": "high", "medium", or "low" based on how legible the entry is
+For each photo:
+1. Determine which discipline it shows:
+   - "ata" — ATA Trap (single targets, commonly out of 25)
+   - "dtl" — Down-The-Line / DTL (single targets, commonly out of 25)
+   - "doubles" — any doubles event (ATA Trap Doubles, Universal Trench doubles, etc — commonly out of 50)
+   Infer from labels, headings, and column layout.
+2. Read every shooter row: name (often handwritten, sometimes cursive), class if shown (AA/A/B/C/D), and the final total score for that round (the TOTAL column, or a circled/boxed number).
+
+Then MERGE all photos into ONE list of shooters:
+- Match the same shooter across photos by name, allowing for minor handwriting/spelling variation (treat as the same person).
+- For each shooter, populate "ata", "dtl", "doubles" with that shooter's score from the matching discipline's scorecard if present, otherwise null. A shooter who only appears on one card should have the other two fields as null.
 
 SCORING NOTES:
-- Each row is one shooter. Target columns are numbered across the top.
 - The scoring system often uses a running countdown: numbers in cells show hits remaining, and a diagonal slash (/) marks a hit.
-- The TOTAL column on the right (or a circled/boxed number) shows the final score for the round.
 - Pre-printed diagonal lines on the card template are not marks — ignore them.
 - Only include shooters who have a name written. Skip blank rows.
+
+Also extract:
+- "competition": the name/title of the competition or event written on the card(s). If not visible, use null.
+- "date": the date of the event, formatted as YYYY-MM-DD. If not visible, use null.
 
 Return ONLY valid JSON, no markdown, no explanation:
 {
   "competition": "string or null",
   "date": "YYYY-MM-DD or null",
-  "discipline": "string or null",
-  "maxScore": 25,
   "shooters": [
-    { "name": "string", "class": "string or null", "total": 21, "confidence": "high" }
+    { "name": "string", "class": "string or null", "ata": 23, "dtl": null, "doubles": null, "confidence": "high" }
   ]
 }`;
 
@@ -77,8 +77,6 @@ async function scanPhotos(req, res) {
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
-    if (!parsed.maxScore) parsed.maxScore = maxScoreFor(parsed.discipline);
-
     res.json({ success: true, data: parsed });
   } catch (err) {
     console.error('Scan error:', err);
@@ -88,8 +86,8 @@ async function scanPhotos(req, res) {
 
 async function confirmScan(req, res) {
   const { competition, shooters } = req.body;
-  if (!competition || !competition.name || !competition.date || !competition.discipline) {
-    return res.status(400).json({ error: 'Competition name, date and discipline are required' });
+  if (!competition || !competition.name || !competition.date) {
+    return res.status(400).json({ error: 'Competition name and date are required' });
   }
   if (!Array.isArray(shooters) || shooters.length === 0) {
     return res.status(400).json({ error: 'At least one shooter is required' });
@@ -102,7 +100,6 @@ async function confirmScan(req, res) {
       .select('*')
       .ilike('name', competition.name)
       .eq('date', competition.date)
-      .ilike('discipline', competition.discipline)
       .maybeSingle();
     if (findErr) throw findErr;
 
@@ -111,27 +108,27 @@ async function confirmScan(req, res) {
     } else {
       const { data, error } = await supabase
         .from('competitions')
-        .insert({
-          name: competition.name,
-          date: competition.date,
-          discipline: competition.discipline,
-          max_score: competition.maxScore || maxScoreFor(competition.discipline)
-        })
+        .insert({ name: competition.name, date: competition.date })
         .select()
         .single();
       if (error) throw error;
       comp = data;
     }
 
-    const valid = shooters.filter(s =>
-      s.name && s.name.trim() && s.total !== undefined && s.total !== null && s.total !== ''
-    );
+    let saved = 0;
+    for (const s of shooters) {
+      if (!s.name || !s.name.trim()) continue;
+      const scores = {};
+      if (s.ata !== undefined && s.ata !== null && s.ata !== '') scores.ata = Number(s.ata);
+      if (s.dtl !== undefined && s.dtl !== null && s.dtl !== '') scores.dtl = Number(s.dtl);
+      if (s.doubles !== undefined && s.doubles !== null && s.doubles !== '') scores.doubles = Number(s.doubles);
+      if (Object.keys(scores).length === 0) continue;
 
-    for (const s of valid) {
-      await upsertResult(comp.id, s.name.trim(), s.class || '', Number(s.total));
+      await upsertResult(comp.id, s.name.trim(), s.class || '', scores);
+      saved++;
     }
 
-    res.json({ competition: toCompetitionJson(comp), saved: valid.length });
+    res.json({ competition: toCompetitionJson(comp), saved });
   } catch (err) {
     console.error('Confirm error:', err);
     res.status(500).json({ error: err.message });

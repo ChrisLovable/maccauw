@@ -1,6 +1,5 @@
 const supabase = require('../lib/supabase');
 const { toCompetitionJson } = require('../lib/format');
-const { maxScoreFor } = require('../lib/disciplines');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -13,13 +12,13 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    const { name, date, discipline, maxScore } = req.body;
-    if (!name || !date || !discipline) {
-      return res.status(400).json({ error: 'name, date, discipline required' });
+    const { name, date } = req.body;
+    if (!name || !date) {
+      return res.status(400).json({ error: 'name and date required' });
     }
     const { data, error } = await supabase
       .from('competitions')
-      .insert({ name, date, discipline, max_score: maxScore || maxScoreFor(discipline) })
+      .insert({ name, date })
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
