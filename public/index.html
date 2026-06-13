@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0D0D1A">
 <title>Maccauw Clay Target Club — Scorer</title>
+<link rel="icon" type="image/png" href="/logo.png">
 <style>
   :root {
     --bg: #0D0D1A;
@@ -40,13 +41,9 @@
   .header-logo {
     width: 44px;
     height: 44px;
-    background: var(--gold);
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
     flex-shrink: 0;
+    object-fit: cover;
   }
   .header-title { flex: 1; }
   .header-title h1 { font-size: 16px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
@@ -340,7 +337,7 @@
 <body>
 
 <div class="header">
-  <div class="header-logo">🎯</div>
+  <img class="header-logo" src="/logo.png" alt="Maccauw logo">
   <div class="header-title">
     <h1>Maccauw Scorer</h1>
     <p>Kleiteikenklub · Clay Target Club</p>
