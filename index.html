@@ -236,12 +236,22 @@
     position: relative;
   }
   .drop-zone:hover, .drop-zone.dragover { border-color: var(--gold); background: rgba(212,175,55,0.05); }
-  .drop-zone.disabled { opacity: 0.5; cursor: not-allowed; }
-  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .drop-zone.disabled input[type=file] { pointer-events: none; }
+  .drop-zone.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
   .drop-zone-icon { font-size: 40px; margin-bottom: 8px; }
   .drop-zone p { color: var(--muted); font-size: 13px; }
   .drop-zone p strong { color: var(--white); }
+
+  /* ── Camera view ── */
+  .camera-view { margin-bottom: 12px; }
+  .camera-video {
+    width: 100%;
+    max-height: 60vh;
+    border-radius: var(--radius);
+    background: #000;
+    display: block;
+    object-fit: cover;
+  }
+  .camera-controls { display: flex; gap: 8px; margin-top: 10px; }
 
   .photo-grid {
     display: grid;
@@ -347,13 +357,26 @@
   <div id="scan-upload">
     <div class="card">
       <div class="card-title">📷 Scan Scorecard</div>
-      <div class="card-subtitle">Take or upload up to 4 photos — one per discipline (ATA Trap, DTL, Doubles). Claude reads the competition name, date and matches each shooter's ATA/DTL/Doubles scores automatically.</div>
+      <div class="card-subtitle">Take up to 4 photos — one per discipline (ATA Trap, DTL, Doubles). Claude reads the competition name, date and matches each shooter's ATA/DTL/Doubles scores automatically.</div>
 
-      <div class="drop-zone" id="drop-zone">
-        <input type="file" id="photo-input" accept="image/*" multiple capture="environment" onchange="handlePhotoSelect(event)">
-        <div class="drop-zone-icon">📸</div>
-        <p><strong>Tap to take photo or upload</strong></p>
-        <p>Up to 4 photos of the same scorecard</p>
+      <div class="camera-view" id="camera-view" style="display:none">
+        <video id="camera-video" class="camera-video" autoplay playsinline muted></video>
+        <div class="camera-controls">
+          <button class="btn btn-primary btn-block" onclick="capturePhoto()" id="shutter-btn">📸 Capture (<span id="camera-count">0</span>/4)</button>
+          <button class="btn btn-secondary" onclick="closeCamera()">✕ Done</button>
+        </div>
+      </div>
+
+      <div id="camera-start">
+        <div class="drop-zone" id="drop-zone" onclick="openCamera()">
+          <div class="drop-zone-icon">📸</div>
+          <p><strong>Tap to open camera</strong></p>
+          <p>Up to 4 photos of the same scorecard</p>
+        </div>
+        <label class="btn btn-secondary btn-block" style="margin-top:8px;display:block;text-align:center;cursor:pointer">
+          ⬆️ Upload from gallery
+          <input type="file" id="photo-input" accept="image/*" multiple onchange="handlePhotoSelect(event)" style="display:none">
+        </label>
       </div>
 
       <div class="photo-grid" id="photo-grid"></div>
@@ -494,6 +517,7 @@ function showPage(name) {
   const pages = ['scan', 'leaderboard', 'manual'];
   const idx = pages.indexOf(name);
   if (idx >= 0) btns[idx].classList.add('active');
+  if (name !== 'scan') closeCamera();
   if (name === 'leaderboard') refreshLeaderboard();
   if (name === 'manual') refreshManualCompSelect();
 }
@@ -561,6 +585,65 @@ async function handlePhotoSelect(e) {
   input.disabled = false;
 }
 
+// ── Scan: live camera capture (no native retake/use-photo dialog) ──────────
+let cameraStream = null;
+
+async function openCamera() {
+  if (photos.length >= 4) return toast('Maximum 4 photos', 'error');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    document.getElementById('camera-video').srcObject = cameraStream;
+    document.getElementById('camera-view').style.display = 'block';
+    document.getElementById('camera-start').style.display = 'none';
+    updateCameraCount();
+  } catch (err) {
+    toast('Camera unavailable: ' + err.message, 'error');
+  }
+}
+
+function capturePhoto() {
+  if (photos.length >= 4) return;
+  const video = document.getElementById('camera-video');
+  let { videoWidth: width, videoHeight: height } = video;
+  const maxDim = 1500;
+  if (width > maxDim || height > maxDim) {
+    if (width > height) {
+      height = Math.round(height * (maxDim / width));
+      width = maxDim;
+    } else {
+      width = Math.round(width * (maxDim / height));
+      height = maxDim;
+    }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+  photos.push(canvas.toDataURL('image/jpeg', 0.7));
+  renderPhotoGrid();
+  updateCameraCount();
+  if (photos.length >= 4) closeCamera();
+}
+
+function updateCameraCount() {
+  document.getElementById('camera-count').textContent = photos.length;
+  document.getElementById('shutter-btn').disabled = photos.length >= 4;
+}
+
+function closeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  const view = document.getElementById('camera-view');
+  const start = document.getElementById('camera-start');
+  if (view) view.style.display = 'none';
+  if (start) start.style.display = 'block';
+}
+
 function renderPhotoGrid() {
   const grid = document.getElementById('photo-grid');
   grid.innerHTML = photos.map((dataUrl, i) => `
@@ -578,11 +661,13 @@ function renderPhotoGrid() {
 function removePhoto(idx) {
   photos.splice(idx, 1);
   renderPhotoGrid();
+  updateCameraCount();
 }
 
 function clearPhotos() {
   photos = [];
   renderPhotoGrid();
+  updateCameraCount();
 }
 
 // ── Scan: run OCR ─────────────────────────────────────────────────────────
@@ -613,6 +698,7 @@ async function runScan() {
     };
 
     renderScanResults();
+    closeCamera();
     document.getElementById('scan-upload').style.display = 'none';
     document.getElementById('scan-results').style.display = 'block';
     toast(`Found ${scanData.shooters.length} shooter(s)`);
@@ -688,6 +774,7 @@ function removeScanShooterRow(idx) {
 
 function discardScan() {
   scanData = null;
+  closeCamera();
   clearPhotos();
   document.getElementById('scan-results').style.display = 'none';
   document.getElementById('scan-upload').style.display = 'block';
@@ -965,6 +1052,7 @@ async function saveManualScores() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 renderPhotoGrid();
+updateCameraCount();
 refreshLeaderboard();
 </script>
 </body>
